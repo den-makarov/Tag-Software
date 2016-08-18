@@ -212,20 +212,20 @@ void I2C_Init_Simplified(I2C_TypeDef* I2Cx, I2C_CONFIG_TypeDef * I2C_Configurati
 	I2Cx->CCRL &= (uint8_t)(~I2C_CCRL_CCR);
 
 	/* Detect Fast or Standard mode depending on the Output clock frequency selected */
-	if (OutputClockFrequencyHz > I2C_MAX_STANDARD_FREQ) /* FAST MODE */
+	if (I2C_Configuration->OutputClockFrequencyHz != I2C_MAX_STANDARD_FREQ) /* FAST MODE */
 	{
 		/* Set F/S bit for fast mode */
 		tmpccrh = I2C_CCRH_FS;
 
-		if (I2C_DutyCycle == I2C_DUTYCYCLE_2)
+		if (I2C_Configuration->I2C_DutyCycle == I2C_DUTYCYCLE_2)
 		{
 			/* Fast mode speed calculate: Tlow/Thigh = 2 */
-			result = (uint16_t) ((InputClockFrequencyMHz * 1000000) / (OutputClockFrequencyHz * 3));
+			result = (uint16_t) ((I2C_Configuration->InputClockFrequencyMHz * 1000000) / (I2C_Configuration->OutputClockFrequencyHz * 3));
 		}
 		else /* I2C_DUTYCYCLE_16_9 */
 		{
 			/* Fast mode speed calculate: Tlow/Thigh = 16/9 */
-			result = (uint16_t) ((InputClockFrequencyMHz * 1000000) / (OutputClockFrequencyHz * 25));
+			result = (uint16_t) ((I2C_Configuration->InputClockFrequencyMHz * 1000000) / (I2C_Configuration->OutputClockFrequencyHz * 25));
 			/* Set DUTY bit */
 			tmpccrh |= I2C_CCRH_DUTY;
 		}
@@ -237,10 +237,10 @@ void I2C_Init_Simplified(I2C_TypeDef* I2Cx, I2C_CONFIG_TypeDef * I2C_Configurati
 			result = (uint16_t)0x0001;
 		}
 
-		/* Set Maximum Rise Time: 300ns max in Fast Mode
-		= [300ns/(1/InputClockFrequencyMHz.10e6)]+1
-		= [(InputClockFrequencyMHz * 3)/10]+1 */
-		tmpval = ((InputClockFrequencyMHz * 3) / 10) + 1;
+		/* Set Maximum Rise Time: 600ns max in Fast Mode
+		= [600ns/(1/InputClockFrequencyMHz.10e6)]+1
+		= [(InputClockFrequencyMHz * 6)/10]+1 */
+		tmpval = ((I2C_Configuration->InputClockFrequencyMHz * 6) / 10) + 1;
 		I2Cx->TRISER = (uint8_t)tmpval;
 
 	}
@@ -248,7 +248,7 @@ void I2C_Init_Simplified(I2C_TypeDef* I2Cx, I2C_CONFIG_TypeDef * I2C_Configurati
 	{
 
 		/* Calculate standard mode speed */
-		result = (uint16_t)((InputClockFrequencyMHz * 1000000) / (OutputClockFrequencyHz << (uint8_t)1));
+		result = (uint16_t)((I2C_Configuration->InputClockFrequencyMHz * 1000000) / (I2C_Configuration->OutputClockFrequencyHz << (uint8_t)1));
 
 		/* Verify and correct CCR value if below minimum value */
 		if (result < (uint16_t)0x0004)
@@ -260,7 +260,7 @@ void I2C_Init_Simplified(I2C_TypeDef* I2Cx, I2C_CONFIG_TypeDef * I2C_Configurati
 		/* Set Maximum Rise Time: 1000ns max in Standard Mode
 		= [1000ns/(1/InputClockFrequencyMHz.10e6)]+1
 		= InputClockFrequencyMHz+1 */
-		I2Cx->TRISER = (uint8_t)(InputClockFrequencyMHz + (uint8_t)1);
+		I2Cx->TRISER = (uint8_t)(I2C_Configuration->InputClockFrequencyMHz + (uint8_t)1);
 
 	}
 
@@ -272,11 +272,11 @@ void I2C_Init_Simplified(I2C_TypeDef* I2Cx, I2C_CONFIG_TypeDef * I2C_Configurati
 	I2Cx->CR1 |= I2C_CR1_PE;
 
 	/* Configure I2C acknowledgement */
-	I2C_AcknowledgeConfig(Ack);
+	I2C_AcknowledgeConfig(I2C_Configuration->Ack);
 
 	/*--------------------------- I2C OAR Configuration ------------------------*/
-	I2Cx->OARL = (uint8_t)(OwnAddress);
-	I2Cx->OARH = (uint8_t)((uint8_t)(AddMode | I2C_OARH_ADDCONF) | (uint8_t)((OwnAddress & (uint16_t)0x0300) >> (uint8_t)7));
+	I2Cx->OARL = (uint8_t)(I2C_Configuration->OwnAddress);
+	I2Cx->OARH = (uint8_t)((uint8_t)(I2C_Configuration->AddMode | I2C_OARH_ADDCONF) | (uint8_t)((I2C_Configuration->OwnAddress & (uint16_t)0x0300) >> (uint8_t)7));
 }
 
 
