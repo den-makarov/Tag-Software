@@ -197,6 +197,9 @@ void I2C_Init(uint32_t OutputClockFrequencyHz, uint16_t OwnAddress,
 
 void I2C_Init_Simplified(I2C_TypeDef* I2Cx, I2C_CONFIG_TypeDef * I2C_Configuration)
 {
+	uint16_t result = 0x0004;
+	uint16_t tmpval = 0;
+	uint8_t tmpccrh = 0;
 	/*------------------------- I2C FREQ Configuration ------------------------*/
 	/* Clear frequency bits */
 	I2Cx->FREQR &= (uint8_t)(~I2C_FREQR_FREQ);

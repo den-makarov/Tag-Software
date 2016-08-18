@@ -5,7 +5,7 @@
 /*----------------------------------------------------------------------------------------
 		Initializes the display driver.
 ----------------------------------------------------------------------------------------*/
-void driverLCD__INIT(void)
+void driverLCD_INIT(void)
 {
 	driverLCD_ClockDomainConfig();
 	driverLCD_GPIO_I2C_Config();
@@ -60,7 +60,7 @@ void driverLCD_I2C_Config(void)
 	I2C_Configuration.AddMode = I2C_ADDMODE_7BIT;			// 7 bit Address of the device
 	I2C_Configuration.InputClockFrequencyMHz = 4;			//	System frequency configured in main()
   
-	I2C_Init_Simplified(LCD_I2C_PORT, &I2C_Configuration);
+	I2C_Init_Simplified(LCD_I2C, &I2C_Configuration);
 }
 
 
@@ -109,7 +109,7 @@ void driverLCD_disableCMD(void)
 	/* Configure the I2C1 peripheral */
 	driverLCD_I2C_Config();
 	
-	I2C_GenerateSTART(LCD_I2C_PORT, ENABLE);
+	I2C_GenerateSTART(ENABLE);
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_MODE_SELECT));
 
 	I2C_Send7bitAddress(driverLCD_ADDRESS, I2C_DIRECTION_TX);
@@ -207,44 +207,24 @@ void driverLCD_drawDigits(uint16_t value, bool fraction)
 			return;
 	}
 	
-	switch(value & 0x00F0)
+	for (i = 0x00; i < 0x02; i++)
 	{
-		case 0x0000: bufferLCD[1] |= 0x0F; bufferLCD[2] |= 0xA0; break;
-		case 0x0010: bufferLCD[1] |= 0x06; break;
-		case 0x0020: bufferLCD[1] |= 0x0D; bufferLCD[2] |= 0x60; break;
-		case 0x0030: bufferLCD[1] |= 0x0F; bufferLCD[2] |= 0x40; break;
-		case 0x0040: bufferLCD[1] |= 0x06; bufferLCD[2] |= 0xC0; break;
-		case 0x0050: bufferLCD[1] |= 0x0B; bufferLCD[2] |= 0xC0; break;
-		case 0x0060: bufferLCD[1] |= 0x0B; bufferLCD[2] |= 0xE0; break;
-		case 0x0070: bufferLCD[1] |= 0x0E; break;
-		case 0x0080: bufferLCD[1] |= 0x0F; bufferLCD[2] |= 0xE0; break;
-		case 0x0090: bufferLCD[1] |= 0x0F; bufferLCD[2] |= 0xC0; break;
-		default: 
-			bufferLCD[0] = 0x80;
-			bufferLCD[1] = 0x40;
-			bufferLCD[2] = 0x42;
-			driverLCD_WriteRAM(bufferLCD, 0x03, 0x04);
-			return;
-	}
-	
-	switch(value & 0x000F)
-	{
-		case 0: bufferLCD[0] |= 0x0F; bufferLCD[1] |= 0xA0; break;
-		case 1: bufferLCD[0] |= 0x06; break;
-		case 2: bufferLCD[0] |= 0x0D; bufferLCD[1] |= 0x60; break;
-		case 3: bufferLCD[0] |= 0x0F; bufferLCD[1] |= 0x40; break;
-		case 4: bufferLCD[0] |= 0x06; bufferLCD[1] |= 0xC0; break;
-		case 5: bufferLCD[0] |= 0x0B; bufferLCD[1] |= 0xC0; break;
-		case 6: bufferLCD[0] |= 0x0B; bufferLCD[1] |= 0xE0; break;
-		case 7: bufferLCD[0] |= 0x0E; break;
-		case 8: bufferLCD[0] |= 0x0F; bufferLCD[1] |= 0xE0; break;
-		case 9: bufferLCD[0] |= 0x0F; bufferLCD[1] |= 0xC0; break;
-		default: 
-			bufferLCD[0] = 0x80;
-			bufferLCD[1] = 0x40;
-			bufferLCD[2] = 0x42;
-			driverLCD_WriteRAM(bufferLCD, 0x03, 0x04);
-			return;
+		switch((value >> i * 4) & 0x0F)
+		{
+			case 0x00: bufferLCD[0 + i] |= 0x0F; bufferLCD[1 + i] |= 0xA0; break;
+			case 0x01: bufferLCD[0 + i] |= 0x06; break;
+			case 0x02: bufferLCD[0 + i] |= 0x0D; bufferLCD[1 + i] |= 0x60; break;
+			case 0x03: bufferLCD[0 + i] |= 0x0F; bufferLCD[1 + i] |= 0x40; break;
+			case 0x04: bufferLCD[0 + i] |= 0x06; bufferLCD[1 + i] |= 0xC0; break;
+			case 0x05: bufferLCD[0 + i] |= 0x0B; bufferLCD[1 + i] |= 0xC0; break;
+			case 0x06: bufferLCD[0 + i] |= 0x0B; bufferLCD[1 + i] |= 0xE0; break;
+			case 0x07: bufferLCD[0 + i] |= 0x0E; break;
+			case 0x08: bufferLCD[0 + i] |= 0x0F; bufferLCD[1 + i] |= 0xE0; break;
+			case 0x09: bufferLCD[0 + i] |= 0x0F; bufferLCD[1 + i] |= 0xC0; break;
+			default:		bufferLCD[0] = 0x80; bufferLCD[1] = 0x40;
+									bufferLCD[2] = 0x42; driverLCD_WriteRAM(bufferLCD, 0x03, 0x04);
+									return;
+		}
 	}
 	
 	driverLCD_WriteRAM(bufferLCD, 0x03, 0x04);
