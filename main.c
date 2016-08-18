@@ -23,11 +23,13 @@ void Delay (uint16_t nCount);
   */
 void main(void)
 {
+	SystemClockInit();
+		
 	/* Initialize I/Os in Output Mode */
 	GPIO_Init(LCD_CLK_PORT, (GPIO_Pin_TypeDef)LCD_CLK_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
 	
 	/* Initialize LCD driver */
-	driverLCD_setup()
+	driverLCD__INIT();
 	
 	
 	
@@ -68,7 +70,7 @@ void SystemClockInit(void)
 	CLK_PeripheralClockDisableAll();
 	
 	// Set HSI divider
-  CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV4);
+	CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV4);
 	
 	// Set CPU divider
 	CLK_SYSCLKConfig(CLK_PRESCALER_CPUDIV128);
