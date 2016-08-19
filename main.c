@@ -1,5 +1,6 @@
 #include "stm8s.h"
-#include "driverLCD.h"
+//#include "driverLCD.h"
+#include "nordicDriver.h"
 
 #define TIME_BASE_TIMER						TIM4
 
@@ -10,6 +11,8 @@
 #define LCD_CLK_PIN								GPIO_PIN_3
 
 /* Private functions ---------------------------------------------------------*/
+void SystemClockInit(void);
+
 #define DELAY							(1)
 #ifdef DELAY
 void Delay (uint16_t nCount);
@@ -26,8 +29,10 @@ void main(void)
 	/* Initialize I/Os in Output Mode */
 	GPIO_Init(LCD_CLK_PORT, (GPIO_Pin_TypeDef)LCD_CLK_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
 	
+	SystemClockInit();
+	
 	/* Initialize LCD driver */
-	driverLCD_setup()
+	driverNordicInit();
 	
 	
 	
@@ -68,7 +73,7 @@ void SystemClockInit(void)
 	CLK_PeripheralClockDisableAll();
 	
 	// Set HSI divider
-  CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV4);
+	CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV4);
 	
 	// Set CPU divider
 	CLK_SYSCLKConfig(CLK_PRESCALER_CPUDIV128);

@@ -1,104 +1,94 @@
 /* Includes ------------------------------------------------------------------*/
 #include "nordicDriver.h"
 
-#define readRegisterCmd				0x00
-#define writeRegisterCmd			0x20
-#define R_RX_PYLD							0x61
-#define W_TX_PYLD							0xA0
-#define FLUSH_TX							0xE1
-#define FLUSH_RX							0xE2
-#define REUSE_TX_PYLD					0xE3
-#define R_RX_PYLD_WID					0x60
-#define W_ACK_PYLD						0xA8
-#define W_TX_PYLD_NOACK				0xB0
-#define nopCmd								0xFF
-
-void delaySPI(uint32_t);
 
 
 
+/*---------------------------------------------------------------------------------------------------------
 
-void driverRF_SPIConfig(void)
+---------------------------------------------------------------------------------------------------------*/
+void driverNordic_SPIConfig(void)
 {
-	SPI_TypeDef    SPI_InitStructure;
-  GPIO_TypeDef   GPIO_InitStructure;
-
-	delaySPI(1000);
+	SPI_CONFIG_TypeDef	SPI_InitStructure;
 	
-  /* Enable GPIO clock */
-  RCC_APB2PeriphClockCmd(driver_NORDIC_GPIO_CLK | driver_NORDIC_IRQ_CLK | driver_NORDIC_CSN_CLK | driver_NORDIC_CE_CLK, ENABLE);
-  //GPIO_PinRemapConfig(GPIO_Remap_SPI3, ENABLE);
+	SPI_DeInit();
 
-  /* Enable NORDIC SPI clock  */
-  RCC_APB2PeriphClockCmd(driver_NORDIC_SPI_CLK, ENABLE);
-  
-  /* Configure NORDIC SPI pins: SCK, MISO and MOSI */
-  GPIO_InitStructure.GPIO_Pin = driver_NORDIC_SCK_PIN | driver_NORDIC_MISO_PIN | driver_NORDIC_MOSI_PIN;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-  GPIO_Init(driver_NORDIC_GPIO_PORT, &GPIO_InitStructure);
-  
-  /* Configure NORDIC pins: IRQ */
-  GPIO_InitStructure.GPIO_Pin = driver_NORDIC_IRQ_PIN;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-  GPIO_Init(driver_NORDIC_IRQ_PORT, &GPIO_InitStructure);
-		
-	/* Configure NORDIC pins: CSN */
-  GPIO_InitStructure.GPIO_Pin = driver_NORDIC_CSN_PIN;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_Init(driver_NORDIC_CSN_PORT, &GPIO_InitStructure);
+	/* SPI Config */
+	SPI_InitStructure.FirstBit = SPI_FIRSTBIT_MSB;
+	SPI_InitStructure.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+	SPI_InitStructure.Mode = SPI_MODE_MASTER;
+	SPI_InitStructure.ClockPolarity = SPI_CLOCKPOLARITY_LOW;
+	SPI_InitStructure.ClockPhase = SPI_CLOCKPHASE_1EDGE;
+	SPI_InitStructure.Data_Direction = SPI_DATADIRECTION_2LINES_FULLDUPLEX;
+	SPI_InitStructure.Slave_Management = SPI_NSS_HARD;
+	
+	SPI_Init_Simplified(&SPI_InitStructure);
+
+	/* SPI enable */
+	SPI_Cmd(ENABLE);
+}
+
+
+
+
+/*---------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------*/
+void driverNordic_GPIOConfig(void)
+{
+	//	NORDIC_SPI_SCK
+	GPIO_Init(driver_NORDIC_SPI_PORT, (GPIO_Pin_TypeDef)driver_NORDIC_SCK_PIN, GPIO_MODE_OUT_PP_LOW_FAST);
+	
+	//	NORDIC_SPI_MISO - Set only direction
+	GPIO_Init(driver_NORDIC_SPI_PORT, (GPIO_Pin_TypeDef)driver_NORDIC_MISO_PIN, GPIO_MODE_IN_FL_NO_IT);
+	
+	//	NORDIC_SPI_MOSI
+	GPIO_Init(driver_NORDIC_SPI_PORT, (GPIO_Pin_TypeDef)driver_NORDIC_MOSI_PIN, GPIO_MODE_OUT_PP_LOW_FAST);
+	
+	//	NORDIC_IRQ	-	Set only direction
+	GPIO_Init(driver_NORDIC_IRQ_PORT, (GPIO_Pin_TypeDef)driver_NORDIC_IRQ_PIN, GPIO_MODE_IN_FL_NO_IT);
+	
+	//	NORDIC_CSN	-	Set only direction
+	GPIO_Init(driver_NORDIC_CSN_PORT, (GPIO_Pin_TypeDef)driver_NORDIC_CSN_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
 	driver_NORDIC_CSN_HIGH;
 	
-	/* Configure NORDIC pins: CE */
-  GPIO_InitStructure.GPIO_Pin = driver_NORDIC_CE_PIN;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_Init(driver_NORDIC_CE_PORT, &GPIO_InitStructure);
+	//	NORDIC_CE	-	Set only direction
+	GPIO_Init(driver_NORDIC_CE_PORT, (GPIO_Pin_TypeDef)driver_NORDIC_CE_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
 	driver_NORDIC_CE_LOW;
-	
-	SPI_I2S_DeInit(driver_NORDIC_SPI);
-  	
-  /* SPI Config */
-  SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-  SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
-  SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-  SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
-  SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
-  SPI_InitStructure.SPI_NSS = SPI_NSS_Hard;
-  SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_128;
-  SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
-  SPI_Init(driver_NORDIC_SPI, &SPI_InitStructure);
-
-  /* SPI enable */
-  SPI_Cmd(driver_NORDIC_SPI, ENABLE);
 }
 
 
 
 
-void driverRF_INIT(void)
+/*---------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------*/
+void driverNordicInit(void)
 {
-	driverRF_SPIConfig();
-	//driverRF_SYNCHRONIZE();
+	driverNordic_GPIOConfig();
+	
+	CLK_PeripheralClockConfig((CLK_Peripheral_TypeDef)CLK_PERIPHERAL_SPI, ENABLE);
+	
+	driverNordic_SPIConfig();
 }
 
 
 
 
-uint8_t driverRF_Get_Status(void)
+/*---------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------*/
+uint8_t driverNordic_GetStatus(void)
 {
 	uint8_t status;
 
-	//SPI_I2S_SendData(driver_NORDIC_SPI, (uint16_t)(readRegisterCmd | STATUS));
 	driver_NORDIC_CSN_LOW;
-	SPI_I2S_SendData(driver_NORDIC_SPI, nopCmd);
+	SPI_SendData(nopCmd);
 	
-	while(SPI_I2S_GetFlagStatus(driver_NORDIC_SPI, SPI_I2S_FLAG_BSY) != RESET);
+	while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 	
 	driver_NORDIC_CSN_HIGH;	
-	status = (uint8_t)SPI_I2S_ReceiveData(driver_NORDIC_SPI);
+	status = SPI_ReceiveData();
 	
 	return status;
 }
@@ -106,22 +96,25 @@ uint8_t driverRF_Get_Status(void)
 
 
 
-void driverRF_readRegisters(uint16_t registerAddress, uint8_t * data, uint8_t count)
+/*---------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------*/
+void driverNordic_ReadRegisters(uint8_t registerAddress, uint8_t * data, uint8_t count)
 {
 	driver_NORDIC_CSN_LOW;
-	SPI_I2S_SendData(driver_NORDIC_SPI, ((uint16_t)readRegisterCmd) | registerAddress);
+	SPI_SendData(readRegisterCmd | registerAddress);
 	
-	while(SPI_I2S_GetFlagStatus(driver_NORDIC_SPI, SPI_I2S_FLAG_BSY) != RESET);
+	while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 	
-	*data = (uint8_t)SPI_I2S_ReceiveData(driver_NORDIC_SPI);
+	*data = SPI_ReceiveData();
 	
 	while (count-- > 0)
 	{
-		SPI_I2S_SendData(driver_NORDIC_SPI, (uint16_t)nopCmd);
+		SPI_SendData(nopCmd);
 	
-		while(SPI_I2S_GetFlagStatus(driver_NORDIC_SPI, SPI_I2S_FLAG_BSY) != RESET);
+		while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 		
-		*data++ = (uint8_t)SPI_I2S_ReceiveData(driver_NORDIC_SPI);
+		*data++ = SPI_ReceiveData();
 	}
 	driver_NORDIC_CSN_HIGH;
 }
@@ -129,58 +122,28 @@ void driverRF_readRegisters(uint16_t registerAddress, uint8_t * data, uint8_t co
 
 
 
-void driverRF_writeTx(uint8_t * data, uint8_t count)
+
+/*---------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------*/
+void driverNordic_WriteTx(uint8_t * data, uint8_t count)
 {
-	uint16_t i;
+	uint8_t i;
 	
 	driver_NORDIC_CSN_LOW;
-	SPI_I2S_SendData(driver_NORDIC_SPI, (uint16_t)W_TX_PYLD);
+	SPI_SendData(W_TX_PYLD);
 	
-	while(SPI_I2S_GetFlagStatus(driver_NORDIC_SPI, SPI_I2S_FLAG_BSY) != RESET);
+	while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 	
-	i = SPI_I2S_ReceiveData(driver_NORDIC_SPI);
+	i = SPI_ReceiveData();
 	
 	while (count-- > 0)
 	{
-		SPI_I2S_SendData(driver_NORDIC_SPI, (uint8_t)*data++);
+		SPI_SendData(*data++);
 	
-		while(SPI_I2S_GetFlagStatus(driver_NORDIC_SPI, SPI_I2S_FLAG_BSY) != RESET);
+		while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 		
-		i = SPI_I2S_ReceiveData(driver_NORDIC_SPI);
-		i++;
-	}
-	driver_NORDIC_CSN_HIGH;
-}
-
-
-
-void driverRF_triggerCEPin(void)
-{
-	driver_NORDIC_CE_HIGH;
-	delaySPI(100);
-	//driver_NORDIC_CE_LOW;
-}
-
-
-
-void driverRF_writeRegisters(uint16_t registerAddress, uint8_t * data, uint8_t count)
-{
-	uint16_t i;
-	
-	driver_NORDIC_CSN_LOW;
-	SPI_I2S_SendData(driver_NORDIC_SPI, ((uint16_t)writeRegisterCmd) | registerAddress);
-	
-	while(SPI_I2S_GetFlagStatus(driver_NORDIC_SPI, SPI_I2S_FLAG_BSY) != RESET);
-	
-	i = SPI_I2S_ReceiveData(driver_NORDIC_SPI);
-	
-	while (count-- > 0)
-	{
-		SPI_I2S_SendData(driver_NORDIC_SPI, (uint8_t)*data++);
-	
-		while(SPI_I2S_GetFlagStatus(driver_NORDIC_SPI, SPI_I2S_FLAG_BSY) != RESET);
-		
-		i = SPI_I2S_ReceiveData(driver_NORDIC_SPI);
+		i = SPI_ReceiveData();
 		i++;
 	}
 	driver_NORDIC_CSN_HIGH;
@@ -189,18 +152,28 @@ void driverRF_writeRegisters(uint16_t registerAddress, uint8_t * data, uint8_t c
 
 
 
-void driverRF_SYNCHRONIZE(void)
+/*---------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------*/
+void driverNordic_WriteRegisters(uint8_t registerAddress, uint8_t * data, uint8_t count)
 {
-	//SPI_I2S_SendData(driver_SPI, ((uint16_t)readRegisterCmd) | STATUS);
+	uint8_t i;
+	
 	driver_NORDIC_CSN_LOW;
-	SPI_I2S_SendData(driver_NORDIC_SPI, nopCmd);
+	SPI_SendData(WRITE_REGISTER_CMD | registerAddress);
 	
-	while(SPI_I2S_GetFlagStatus(driver_NORDIC_SPI, SPI_I2S_FLAG_BSY) != RESET);
+	while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 	
-	if (((SPI_I2S_ReceiveData(driver_NORDIC_SPI)) & 0x00FF) != (uint8_t)STATUS_DEFAULT)
+	i = SPI_ReceiveData();
+	
+	while (count-- > 0)
 	{
-		forceSPI_SCK();
-		driverRF_SYNCHRONIZE();
+		SPI_SendData(*data++);
+	
+		while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
+		
+		i = SPI_ReceiveData();
+		i++;
 	}
 	driver_NORDIC_CSN_HIGH;
 }
@@ -208,56 +181,13 @@ void driverRF_SYNCHRONIZE(void)
 
 
 
-void setupRFDriverGPIO(void)
-{
-	GPIO_InitTypeDef  GPIO_InitStructure;
-	
-	//Enable Clock for GPIO port used in SPI driver
-	RCC_APB2PeriphClockCmd(driver_NORDIC_IRQ_CLK, ENABLE);
-	
-	/* Configure NORDIC pins: IRQ */
-  GPIO_InitStructure.GPIO_Pin = driver_NORDIC_IRQ_PIN;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-  GPIO_Init(driver_NORDIC_IRQ_PORT, &GPIO_InitStructure);
-}
+/*---------------------------------------------------------------------------------------------------------
 
-
-
-
-void forceSPI_SCK(void)
-{
-	GPIO_InitTypeDef  GPIO_InitStructure;
-	SPI_Cmd(driver_NORDIC_SPI, DISABLE);
-	  
-  /* Configure the GPIO_SPI_SCK and GPIO_SPI_MOSI pins */
-  GPIO_InitStructure.GPIO_Pin = driver_NORDIC_SCK_PIN | driver_NORDIC_MOSI_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_Init(driver_NORDIC_GPIO_PORT, &GPIO_InitStructure);
-	
-	GPIO_ResetBits(driver_NORDIC_GPIO_PORT, driver_NORDIC_MOSI_PIN);
-	GPIO_SetBits(driver_NORDIC_GPIO_PORT, driver_NORDIC_SCK_PIN);
-	delaySPI(1000);
-	GPIO_ResetBits(driver_NORDIC_GPIO_PORT, driver_NORDIC_SCK_PIN);
-	delaySPI(1000);
-	
-	GPIO_InitStructure.GPIO_Pin = driver_NORDIC_SCK_PIN | driver_NORDIC_MOSI_PIN;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-  GPIO_Init(driver_NORDIC_GPIO_PORT, &GPIO_InitStructure);
-	
-	SPI_Cmd(driver_NORDIC_SPI, ENABLE);
-}
-
-
-
-
-
-void driverRF_testTransmition(void)
+---------------------------------------------------------------------------------------------------------*/
+void driverNordic_TestTransmition(void)
 {
 	uint8_t data[5];
-	uint32_t i = 0x00;
+	uint8_t i = 0x00;
 	uint8_t j = 0x00;
 	
 	data[0] = (uint8_t)0x00;
@@ -266,38 +196,31 @@ void driverRF_testTransmition(void)
 	data[3] = (uint8_t)105;
 	data[4] = (uint8_t)0x75;
 	
-	driverRF_writeRegisters(0x04, &data[0]);
-	driverRF_writeRegisters(0x01, &data[0]);
-	driverRF_writeRegisters(0x10, &data[4]);
-	driverRF_writeRegisters(0x05, &data[3]);
-	driverRF_writeRegisters(0x00, &data[1]);
+	driverNordic_WriteRegisters(SETUP_RETR, &data[0]);
+	driverNordic_WriteRegisters(EN_AA_ESHBURST, &data[0]);
+	driverNordic_WriteRegisters(TX_ADDR, &data[4]);
+	driverNordic_WriteRegisters(RF_CH, &data[3]);
+	driverNordic_WriteRegisters(CONFIG, &data[1]);
 	
-	for (i = 0; i < 400000; i++);
+	// Delay for 1.5 ms
+	// Transition from Power Down Mode to StandBy I Mode
+	// Depends on external crystal inductance. For every 30 mH add 1.5 ms
+	// Fifty nop cycles at 31250 Hz CPU clocking frequency
+	for (i = 0; i < 50; i++);
 	
 	for (j = 0; j < 4; j++)
 	{
 		driver_NORDIC_CE_HIGH;
-	
-		for (i = 0; i < 4000; i++);
-	
-		driverRF_writeTx(data, 0x05);
-	
-		for (i = 0; i < 400000; i++);
 		
+		// Delay for 130 us - Tx settling time
+		// Four nop cycles at 31250 Hz CPU clocking frequency
+		for (i = 0; i < 4; i++);
+	
+		driverNordic_WriteTx(data, 0x05);
+	
 		driver_NORDIC_CE_LOW;
 	
-		data[0] = driverRF_Get_Status();
-		driverRF_writeRegisters(0x07, &data[0]);
+		data[0] = driverNordic_GetStatus();
+		driverNordic_WriteRegisters(0x07, &data[0]);
 	}
-}
-
-
-
-
-
-void delaySPI(uint32_t nCount)
-{
-  uint32_t index = 0; 
-  for(index = (100 * nCount); index != 0; index--);
-
 }
