@@ -8,7 +8,7 @@
 #define driver_NORDIC_MISO_PIN					GPIO_PIN_7
 #define driver_NORDIC_MOSI_PIN					GPIO_PIN_6
 #define driver_NORDIC_SPI_PORT					GPIOC
-##define driver_NORDIC_SPI						SPI
+#define driver_NORDIC_SPI						SPI
 
 #define driver_NORDIC_CSN_PIN					GPIO_PIN_2
 #define driver_NORDIC_CSN_PORT					GPIOA

@@ -13,7 +13,7 @@ void driverNordic_SPIConfig(void)
 	
 	SPI_DeInit();
 
-	/* SPI Config */
+	// SPI Config 
 	SPI_InitStructure.FirstBit = SPI_FIRSTBIT_MSB;
 	SPI_InitStructure.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
 	SPI_InitStructure.Mode = SPI_MODE_MASTER;
@@ -24,7 +24,7 @@ void driverNordic_SPIConfig(void)
 	
 	SPI_Init_Simplified(&SPI_InitStructure);
 
-	/* SPI enable */
+	// SPI enable
 	SPI_Cmd(ENABLE);
 }
 
@@ -83,7 +83,7 @@ uint8_t driverNordic_GetStatus(void)
 	uint8_t status;
 
 	driver_NORDIC_CSN_LOW;
-	SPI_SendData(nopCmd);
+	SPI_SendData(NOP_CMD);
 	
 	while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 	
@@ -102,7 +102,7 @@ uint8_t driverNordic_GetStatus(void)
 void driverNordic_ReadRegisters(uint8_t registerAddress, uint8_t * data, uint8_t count)
 {
 	driver_NORDIC_CSN_LOW;
-	SPI_SendData(readRegisterCmd | registerAddress);
+	SPI_SendData(READ_REGISTER_CMD | registerAddress);
 	
 	while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 	
@@ -110,7 +110,7 @@ void driverNordic_ReadRegisters(uint8_t registerAddress, uint8_t * data, uint8_t
 	
 	while (count-- > 0)
 	{
-		SPI_SendData(nopCmd);
+		SPI_SendData(NOP_CMD);
 	
 		while(SPI_GetFlagStatus(SPI_FLAG_BSY) != RESET);
 		
@@ -188,7 +188,7 @@ void driverNordic_TestTransmition(void)
 {
 	uint8_t data[5];
 	uint8_t i = 0x00;
-	uint8_t j = 0x00;
+	//uint8_t j = 0x00;
 	
 	data[0] = (uint8_t)0x00;
 	data[1] = (uint8_t)0x3A;
@@ -196,11 +196,11 @@ void driverNordic_TestTransmition(void)
 	data[3] = (uint8_t)105;
 	data[4] = (uint8_t)0x75;
 	
-	driverNordic_WriteRegisters(SETUP_RETR, &data[0]);
-	driverNordic_WriteRegisters(EN_AA_ESHBURST, &data[0]);
-	driverNordic_WriteRegisters(TX_ADDR, &data[4]);
-	driverNordic_WriteRegisters(RF_CH, &data[3]);
-	driverNordic_WriteRegisters(CONFIG, &data[1]);
+	driverNordic_WriteRegisters(SETUP_RETR, &data[0], 0x01);
+	driverNordic_WriteRegisters(EN_AA_ESHBURST, &data[0], 0x01);
+	driverNordic_WriteRegisters(TX_ADDR, &data[4], 0x01);
+	driverNordic_WriteRegisters(RF_CH, &data[3], 0x01);
+	driverNordic_WriteRegisters(CONFIG, &data[1], 0x01);
 	
 	// Delay for 1.5 ms
 	// Transition from Power Down Mode to StandBy I Mode
@@ -208,8 +208,8 @@ void driverNordic_TestTransmition(void)
 	// Fifty nop cycles at 31250 Hz CPU clocking frequency
 	for (i = 0; i < 50; i++);
 	
-	for (j = 0; j < 4; j++)
-	{
+	//for (j = 0; j < 4; j++)
+	//{
 		driver_NORDIC_CE_HIGH;
 		
 		// Delay for 130 us - Tx settling time
@@ -221,6 +221,6 @@ void driverNordic_TestTransmition(void)
 		driver_NORDIC_CE_LOW;
 	
 		data[0] = driverNordic_GetStatus();
-		driverNordic_WriteRegisters(0x07, &data[0]);
-	}
+		driverNordic_WriteRegisters(STATUS, &data[0], 0x01);
+	//}
 }
