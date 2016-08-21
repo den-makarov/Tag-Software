@@ -328,14 +328,14 @@ typedef enum
   * @}
   */
 
-struct I2C_CONFIG_TypeDef {
+typedef struct {
 	uint32_t OutputClockFrequencyHz;
 	uint16_t OwnAddress;
 	I2C_DutyCycle_TypeDef I2C_DutyCycle;
 	I2C_Ack_TypeDef Ack;
 	I2C_AddMode_TypeDef AddMode;
 	uint8_t InputClockFrequencyMHz;
-};  
+}I2C_CONFIG_TypeDef;  
   
   
 /* Exported constants --------------------------------------------------------*/
@@ -512,22 +512,8 @@ struct I2C_CONFIG_TypeDef {
   * @{
   */
 
-void I2C_DeInit(void);
-void I2C_Init(uint32_t OutputClockFrequencyHz, uint16_t OwnAddress, 
-              I2C_DutyCycle_TypeDef I2C_DutyCycle, I2C_Ack_TypeDef Ack, 
-              I2C_AddMode_TypeDef AddMode, uint8_t InputClockFrequencyMHz );
-void I2C_Cmd(FunctionalState NewState);
-void I2C_GeneralCallCmd(FunctionalState NewState);
-void I2C_GenerateSTART(FunctionalState NewState);
-void I2C_GenerateSTOP(FunctionalState NewState);
-void I2C_SoftwareResetCmd(FunctionalState NewState);
-void I2C_StretchClockCmd(FunctionalState NewState);
-void I2C_AcknowledgeConfig(I2C_Ack_TypeDef Ack);
-void I2C_FastModeDutyCycleConfig(I2C_DutyCycle_TypeDef I2C_DutyCycle);
-void I2C_ITConfig(I2C_IT_TypeDef I2C_IT, FunctionalState NewState);
-uint8_t I2C_ReceiveData(void);
-void I2C_Send7bitAddress(uint8_t Address, I2C_Direction_TypeDef Direction);
-void I2C_SendData(uint8_t Data);
+void I2C_Init_Simplified(I2C_TypeDef* I2Cx, I2C_CONFIG_TypeDef * I2C_Configuration);
+
 /**
  * @brief
  ****************************************************************************************
@@ -611,25 +597,6 @@ void I2C_SendData(uint8_t Data);
  *******************************************************************************
  */
 ErrorStatus I2C_CheckEvent(I2C_Event_TypeDef I2C_Event);
-/**
- *
- *  2) Advanced state monitoring
- *******************************************************************************
- */
-I2C_Event_TypeDef I2C_GetLastEvent(void);
-/**
- *
- *  3) Flag-based state monitoring
- *******************************************************************************
- */
-FlagStatus I2C_GetFlagStatus(I2C_Flag_TypeDef I2C_Flag);
-/**
- *
- *******************************************************************************
- */
-void I2C_ClearFlag(I2C_Flag_TypeDef I2C_FLAG);
-ITStatus I2C_GetITStatus(I2C_ITPendingBit_TypeDef I2C_ITPendingBit);
-void I2C_ClearITPendingBit(I2C_ITPendingBit_TypeDef I2C_ITPendingBit);
 
 
 /**

@@ -79,6 +79,17 @@
 #define FEATURE			    				0x1D
 
 
+
+/*---------------------------------------------------------------------------------------------
+				Status and Control Bits for RF driver
+---------------------------------------------------------------------------------------------*/
+
+// ----------- FIFO_STATUS ----------- //
+#define RxFIFO_EMPTY				(uint8_t)0x01
+
+
+
+
 /*---------------------------------------------------------------------------------------------
 				driver functions
 ---------------------------------------------------------------------------------------------*/
@@ -89,4 +100,6 @@ uint8_t driverNordic_GetStatus(void);
 void driverNordic_ReadRegisters(uint8_t registerAddress, uint8_t * data, uint8_t count);
 void driverNordic_WriteRegisters(uint8_t registerAddress, uint8_t * data, uint8_t count);
 void driverNordic_WriteTx(uint8_t * data, uint8_t count);
-void driverNordic_TestTransmition(void);
+//void driverNordic_TestTransmition(void);
+void driverNordic_FlushRxFIFO(void);
+void driverNordic_ReadRxPayload(uint8_t * data, uint8_t count);

@@ -11,11 +11,17 @@
 #define LCD_CLK_PORT							GPIOA
 #define LCD_CLK_PIN								GPIO_PIN_3
 
+#define NORDIC_DATA_WIDTH					(uint8_t)0x03
+#define EMPTY_RECEIVER						(uint8_t)0x01
+#define LCD_ENABLED								(uint8_t)0x10
+#define LCD_CONTROL_MASK					(uint8_t)0xF0
+#define RxFIFO_DATA_READY					(uint8_t)0x40
 /* Private functions ---------------------------------------------------------*/
 void SystemClockInit(void);
-//void decimalCorrection(uint16_t * r);
-//void updatePrice(void);
+void decimalCorrection(uint16_t * r);
+void updatePrice(uint8_t * src);
 //void testNordicDriver(void);
+void testNordicPRX(uint8_t * data, uint8_t count);
 
 #define DELAY							(1)
 #ifdef DELAY
@@ -30,20 +36,21 @@ void Delay (uint16_t nCount);
   */
 void main(void)
 {
-	uint16_t nordicData = 0x00;
-	uint8_t nordicStatus = 0x00;
-	
+	uint16_t price = 0x0000;
+	uint8_t lcdStatus = 0x00;
+	uint8_t nordicData[NORDIC_DATA_WIDTH];
+	nordicData[0] = 0x00;
+
 	SystemClockInit();
 		
 	/* Initialize I/Os in Output Mode */
 	GPIO_Init(LCD_CLK_PORT, (GPIO_Pin_TypeDef)LCD_CLK_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
 	
 	/* Initialize RF driver */
-	//driverNordicInit();
+	driverNordicInit();
 	
 	/* Initialize LCD driver */
-	//driverLCD_INIT();
-	//driverLCD_enableCMD();
+	driverLCD_INIT();
 	
 	
 	/* Initialization Time Base unit for synchronized delays */
@@ -58,29 +65,97 @@ void main(void)
 
   while (1)
   {
-		Delay(2000);
 		LCD_CLK_PORT->ODR ^= LCD_CLK_PIN;
 		
-		/*nordicData = (uint16_t)driverNordic_GetStatus();
-		decimalCorrection(&nordicData);
-		driverLCD_drawDigits(nordicData, FALSE);
-		nordicData = 0x0000;
 		
-		Delay(2000);
-		LCD_CLK_PORT->ODR ^= LCD_CLK_PIN;
+		//for (price = 0x0000; price < 10000; price++);
+		testNordicPRX(nordicData, 0x03);
 		
-		testNordicDriver();
-		nordicData = (uint16_t)driverNordic_GetStatus();
-		decimalCorrection(&nordicData);
-		driverLCD_drawDigits(nordicData, FALSE);
-		nordicData = 0x0000;
-		
-		nordicStatus = (uint16_t)driverNordic_GetStatus();
-		driverNordic_WriteRegisters(STATUS, &nordicStatus, 0x01);
-		//updatePrice();*/
+		if ((nordicData[0] & EMPTY_RECEIVER) != EMPTY_RECEIVER)
+		{
+			lcdStatus = nordicData[0] & LCD_CONTROL_MASK;
+			if ((lcdStatus & LCD_ENABLED) == LCD_ENABLED)
+			{
+				driverLCD_enableCMD();
+				updatePrice(nordicData + 0x01);
+			}
+			else
+				driverLCD_disableCMD();
+		}
   }
 
 }
+
+
+
+void testNordicPRX(uint8_t * data, uint8_t count)
+{
+	uint8_t i = 0x00;	
+	uint8_t tempByte = 0x00;
+	uint16_t timeOut;
+	
+	// Check Nordic RxFIFO status
+	driverNordic_ReadRegisters(FIFO_STATUS, &tempByte, 0x01);
+	
+	if ((tempByte & RxFIFO_EMPTY) != RxFIFO_EMPTY)
+		driverNordic_FlushRxFIFO();
+	
+	
+	// Disable AutoAcknoledge for all Pipes	
+	tempByte = 0x00;
+	driverNordic_WriteRegisters(EN_AA_ESHBURST, &tempByte, 0x01);
+	
+	// Set the 105th radio-channel that is 2505 MHz
+	// I hope it should be free and legal
+	tempByte = 0x69;
+	driverNordic_WriteRegisters(RF_CH, &tempByte, 0x01);
+	
+	// Set last byte of PRX address on Pipe 0
+	tempByte = 0x75;
+	driverNordic_WriteRegisters(RX_ADDR_P0, &tempByte, 0x01);
+	
+	// Set Width of Payload on Pipe 0 in case when
+	// AutoPayloadWidth feature isn't enabled
+	tempByte = count;
+	driverNordic_WriteRegisters(RX_PW_P0, &tempByte, 0x01);
+		
+	// Configure nordic to listen to air
+	// and mask IRQ pin on expected event
+	tempByte = 0x4B;
+	driverNordic_WriteRegisters(CONFIG, &tempByte, 0x01);
+	
+	// Delay for 1.5 ms
+	// Transition from Power Down Mode to StandBy I Mode
+	// Depends on external crystal inductance. For every 30 mH add 1.5 ms
+	// Fifty nop cycles at 31250 Hz CPU clocking frequency
+	for (i = 0; i < 50; i++);
+	
+	// Enable Receiver
+	driver_NORDIC_CE_HIGH;
+	
+	// Wait for received packet or timeout at least 3 sec
+	LCD_CLK_PORT->ODR |= LCD_CLK_PIN;
+	for (timeOut = 0x0000; timeOut < 10000; timeOut++)
+	{
+		tempByte = driverNordic_GetStatus();
+		
+		if ((tempByte & RxFIFO_DATA_READY) == RxFIFO_DATA_READY)
+		{
+			driver_NORDIC_CE_LOW;
+			
+			driverNordic_WriteRegisters(STATUS, &tempByte, 0x01);
+			driverNordic_ReadRxPayload(data, count);
+			LCD_CLK_PORT->ODR &= ~LCD_CLK_PIN;
+			return;
+		}
+	}
+	LCD_CLK_PORT->ODR &= ~LCD_CLK_PIN;
+	driver_NORDIC_CE_LOW;
+	*data |= EMPTY_RECEIVER;
+	
+	return;
+}
+
 
 /*
 void testNordicDriver()
@@ -89,12 +164,13 @@ void testNordicDriver()
 	uint8_t i = 0x00;
 	//uint8_t j = 0x00;
 	
-	data[0] = (uint8_t)0x00;
-	data[1] = (uint8_t)0x3A;
-	data[2] = (uint8_t)0x01;
-	data[3] = (uint8_t)105;
-	data[4] = (uint8_t)0x75;
-	
+	nordicData = (uint16_t)driverNordic_GetStatus();
+	decimalCorrection(&nordicData);
+	driverLCD_drawDigits(nordicData, FALSE);
+	nordicData = 0x0000;
+		
+	Delay(2000);
+		
 	driverNordic_WriteRegisters(SETUP_RETR, &data[0], 0x01);
 	driverNordic_WriteRegisters(EN_AA_ESHBURST, &data[0], 0x01);
 	driverNordic_WriteRegisters(TX_ADDR, &data[4], 0x01);
@@ -116,7 +192,7 @@ void testNordicDriver()
 		// Delay for 130 us - Tx settling time
 		// Four nop cycles at 31250 Hz CPU clocking frequency
 		//for (i = 0; i < 4; i++);
-	
+		
 		
 	
 		driver_NORDIC_CE_LOW;
@@ -124,6 +200,15 @@ void testNordicDriver()
 		
 		//data[0] = driverNordic_GetStatus();
 		//driverNordic_WriteRegisters(0x07, &data[0], 0x01);
+		
+		
+		nordicData = (uint16_t)driverNordic_GetStatus();
+		decimalCorrection(&nordicData);
+		driverLCD_drawDigits(nordicData, FALSE);
+		nordicData = 0x0000;
+		
+		nordicStatus = driverNordic_GetStatus();
+		driverNordic_WriteRegisters(STATUS, &nordicStatus, 0x01);
 }*/
 
 /************************************************************************
@@ -141,30 +226,33 @@ void testNordicDriver()
 void SystemClockInit(void)
 {
 	// Disable all peripheries clocking
-	CLK_PeripheralClockDisableAll();
+	//CLK_PeripheralClockDisableAll();
+	CLK->PCKENR1 &= 0x00;
+	CLK->PCKENR2 &= 0x73;
+	
 	
 	// Set HSI divider
-	CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV4);
+	//CLK_SYSCLKConfig(CLK_PRESCALER_HSIDIV4);
+	CLK->CKDIVR &= 0xE0;
+	CLK->CKDIVR |= 0x17;
+	
 	
 	// Set CPU divider
-	CLK_SYSCLKConfig(CLK_PRESCALER_CPUDIV128);
+	//CLK_SYSCLKConfig(CLK_PRESCALER_CPUDIV128);
 }
 
 
-/*
-void updatePrice()
-{
-	static uint16_t price = 0x0000;
 
-	if (price++ >= 0x1999)
+void updatePrice(uint8_t * src)
+{
+	uint16_t price = (uint16_t)*src + ((uint16_t)*(src + 0x01) << 0x08);
+
+	if (price >= 0x1999)
 		price = 0x0000;
 
 	decimalCorrection(&price);
 	
-	if (price & 0x0010)
-		driverLCD_drawDigits(price, TRUE);
-	else
-		driverLCD_drawDigits(price, FALSE);
+	driverLCD_drawDigits(price, FALSE);
 }
 
 
@@ -181,7 +269,6 @@ void decimalCorrection(uint16_t * r)
 			*r += ((uint16_t)0x0006 << (i * 4));
 	}
 }
-*/
 
 
 #ifdef DELAY //Software Delay function

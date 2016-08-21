@@ -308,29 +308,8 @@ typedef struct {
 /** @addtogroup SPI_Exported_Functions
   * @{
   */
-void SPI_DeInit(void);
-void SPI_Init(SPI_FirstBit_TypeDef FirstBit, 
-              SPI_BaudRatePrescaler_TypeDef BaudRatePrescaler, 
-              SPI_Mode_TypeDef Mode, SPI_ClockPolarity_TypeDef ClockPolarity, 
-              SPI_ClockPhase_TypeDef ClockPhase, 
-              SPI_DataDirection_TypeDef Data_Direction, 
-              SPI_NSS_TypeDef Slave_Management, uint8_t CRCPolynomial);
 void SPI_Init_Simplified(SPI_CONFIG_TypeDef * SPI_Configuration);
-void SPI_Cmd(FunctionalState NewState);
-void SPI_ITConfig(SPI_IT_TypeDef SPI_IT, FunctionalState NewState);
-void SPI_SendData(uint8_t Data);
-uint8_t SPI_ReceiveData(void);
-void SPI_NSSInternalSoftwareCmd(FunctionalState NewState);
-void SPI_TransmitCRC(void);
-void SPI_CalculateCRCCmd(FunctionalState NewState);
-uint8_t SPI_GetCRC(SPI_CRC_TypeDef SPI_CRC);
-void SPI_ResetCRC(void);
-uint8_t SPI_GetCRCPolynomial(void);
-void SPI_BiDirectionalLineConfig(SPI_Direction_TypeDef SPI_Direction);
 FlagStatus SPI_GetFlagStatus(SPI_Flag_TypeDef SPI_FLAG);
-void SPI_ClearFlag(SPI_Flag_TypeDef SPI_FLAG);
-ITStatus SPI_GetITStatus(SPI_IT_TypeDef SPI_IT);
-void SPI_ClearITPendingBit(SPI_IT_TypeDef SPI_IT);
 
 /**
   * @}
