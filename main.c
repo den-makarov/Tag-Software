@@ -12,6 +12,11 @@
 
 /* Private functions ---------------------------------------------------------*/
 void SystemClockInit(void);
+<<<<<<< HEAD
+=======
+void decimalCorrection(uint16_t * r);
+void updatePrice(void);
+>>>>>>> d85e36528a5fb79e9461b2198e9f170825850258
 
 #define DELAY							(1)
 #ifdef DELAY
@@ -26,14 +31,21 @@ void Delay (uint16_t nCount);
   */
 void main(void)
 {
+	SystemClockInit();
+		
 	/* Initialize I/Os in Output Mode */
 	GPIO_Init(LCD_CLK_PORT, (GPIO_Pin_TypeDef)LCD_CLK_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
 	
 	SystemClockInit();
 	
 	/* Initialize LCD driver */
+<<<<<<< HEAD
 	driverNordicInit();
 	
+=======
+	driverLCD_INIT();
+	driverLCD_enableCMD();
+>>>>>>> d85e36528a5fb79e9461b2198e9f170825850258
 	
 	
 	/* Initialization Time Base unit for synchronized delays */
@@ -50,6 +62,8 @@ void main(void)
   {
 		Delay(1000);
 		LCD_CLK_PORT->ODR ^= LCD_CLK_PIN;
+		
+		updatePrice();
   }
 
 }
@@ -78,6 +92,40 @@ void SystemClockInit(void)
 	// Set CPU divider
 	CLK_SYSCLKConfig(CLK_PRESCALER_CPUDIV128);
 }
+
+
+
+void updatePrice()
+{
+	static uint16_t price = 0x0000;
+
+	if (price++ >= 0x1999)
+		price = 0x0000;
+
+	decimalCorrection(&price);
+	
+	if (price & 0x0010)
+		driverLCD_drawDigits(price, TRUE);
+	else
+		driverLCD_drawDigits(price, FALSE);
+}
+
+
+
+void decimalCorrection(uint16_t * r)
+{
+	uint8_t tempByte = 0x00;
+	uint8_t i;
+
+	for (i = 0x00; i < 0x04; i++)
+	{
+		tempByte = (uint8_t)((*r >> (i * 4)) & 0x0F);
+		if (tempByte > 0x09)
+			*r += ((uint16_t)0x0006 << (i * 4));
+	}
+}
+
+
 
 #ifdef DELAY //Software Delay function
 /**
