@@ -12,11 +12,10 @@
 
 /* Private functions ---------------------------------------------------------*/
 void SystemClockInit(void);
-<<<<<<< HEAD
-=======
+
 void decimalCorrection(uint16_t * r);
 void updatePrice(void);
->>>>>>> d85e36528a5fb79e9461b2198e9f170825850258
+
 
 #define DELAY							(1)
 #ifdef DELAY
@@ -39,13 +38,12 @@ void main(void)
 	SystemClockInit();
 	
 	/* Initialize LCD driver */
-<<<<<<< HEAD
+
 	driverNordicInit();
 	
-=======
+
 	driverLCD_INIT();
 	driverLCD_enableCMD();
->>>>>>> d85e36528a5fb79e9461b2198e9f170825850258
 	
 	
 	/* Initialization Time Base unit for synchronized delays */
