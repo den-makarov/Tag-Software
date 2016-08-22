@@ -39,7 +39,6 @@
 /** @addtogroup SPI_Exported_Types
   * @{
   */
-
 /**
   * @brief  SPI data direction mode
   * Warning: element values correspond to BDM, BDOE, RXONLY bits position
@@ -296,6 +295,16 @@ typedef enum
   * @}
   */
 
+typedef struct {
+	SPI_FirstBit_TypeDef FirstBit;
+	SPI_BaudRatePrescaler_TypeDef BaudRatePrescaler;
+	SPI_Mode_TypeDef Mode;
+	SPI_ClockPolarity_TypeDef ClockPolarity;
+	SPI_ClockPhase_TypeDef ClockPhase;
+	SPI_DataDirection_TypeDef Data_Direction;
+	SPI_NSS_TypeDef Slave_Management;
+} SPI_CONFIG_TypeDef;
+
 /** @addtogroup SPI_Exported_Functions
   * @{
   */
@@ -306,6 +315,7 @@ void SPI_Init(SPI_FirstBit_TypeDef FirstBit,
               SPI_ClockPhase_TypeDef ClockPhase, 
               SPI_DataDirection_TypeDef Data_Direction, 
               SPI_NSS_TypeDef Slave_Management, uint8_t CRCPolynomial);
+void SPI_Init_Simplified(SPI_CONFIG_TypeDef * SPI_Configuration);
 void SPI_Cmd(FunctionalState NewState);
 void SPI_ITConfig(SPI_IT_TypeDef SPI_IT, FunctionalState NewState);
 void SPI_SendData(uint8_t Data);
