@@ -2,13 +2,20 @@
 
 
 
+
+
 /*----------------------------------------------------------------------------------------
 		Initializes the display driver.
 ----------------------------------------------------------------------------------------*/
 void driverLCD_INIT(void)
 {
-	driverLCD_ClockDomainConfig();
-	driverLCD_GPIO_I2C_Config();
+	//driverLCD_ClockDomainConfig();
+	CLK->PCKENR1 |= 0x01;
+	
+	//driverLCD_GPIO_I2C_Config();
+	LCD_I2C_PORT->DDR |= (LCD_SCL_PIN | LCD_SDA_PIN);
+	
+	
 	driverLCD_I2C_Config();
 }
 
@@ -18,11 +25,11 @@ void driverLCD_INIT(void)
 /*----------------------------------------------------------------------------------------
 		Initializes the I2C display driver clocking.
 ----------------------------------------------------------------------------------------*/
-void driverLCD_ClockDomainConfig(void)
+/*void driverLCD_ClockDomainConfig(void)
 {
-	/* Enable LCD_I2C_PORT clock */
+	// Enable LCD_I2C_PORT clock
 	CLK_PeripheralClockConfig((CLK_Peripheral_TypeDef)CLK_PERIPHERAL_I2C, ENABLE);
-}
+}*/
 
 
 
@@ -30,9 +37,9 @@ void driverLCD_ClockDomainConfig(void)
 /*----------------------------------------------------------------------------------------
 		Initializes the GPIO pins used by the I2C display driver.
 ----------------------------------------------------------------------------------------*/
-void driverLCD_GPIO_I2C_Config(void)
+/*void driverLCD_GPIO_I2C_Config(void)
 {
-	/* Initialize I/Os in Output Open-Drain HIZ Slow Mode */
+	// Initialize I/Os in Output Open-Drain HIZ Slow Mode
 	//GPIO_Init(LCD_I2C_PORT, (GPIO_Pin_TypeDef)LCD_SCL_PIN, GPIO_MODE_OUT_OD_HIZ_SLOW);
 	//GPIO_Init(LCD_I2C_PORT, (GPIO_Pin_TypeDef)LCD_SDA_PIN, GPIO_MODE_OUT_OD_HIZ_SLOW);
 	
@@ -40,9 +47,7 @@ void driverLCD_GPIO_I2C_Config(void)
 	// So, there is only one configuration option - Direction
 	// Set output direction
 	LCD_I2C_PORT->DDR |= (LCD_SCL_PIN | LCD_SDA_PIN);
-}
-
-
+}*/
 
 
 /*----------------------------------------------------------------------------------------
@@ -56,10 +61,14 @@ void driverLCD_I2C_Config(void)
 	I2C_Configuration.OutputClockFrequencyHz = 222222;		// I2C speed
 	I2C_Configuration.OwnAddress = 0x00;					// Used only Master transmit mode
 	I2C_Configuration.I2C_DutyCycle = I2C_DUTYCYCLE_2;		// Understandable
-	I2C_Configuration.Ack = I2C_ACK_NONE;					// Used only Master transmit mode
+	//I2C_Configuration.Ack = I2C_ACK_NONE;					// Used only Master transmit mode
 	I2C_Configuration.AddMode = I2C_ADDMODE_7BIT;			// 7 bit Address of the device
 	I2C_Configuration.InputClockFrequencyMHz = 4;			//	System frequency configured in main()
   
+	I2C->CR1 &= (uint8_t)(~I2C_CR1_PE);
+	I2C->CR2 |= I2C_CR2_SWRST;
+	I2C->CR2 &= (uint8_t)(~I2C_CR2_SWRST);
+	
 	I2C_Init_Simplified(LCD_I2C, &I2C_Configuration);
 }
 
@@ -71,25 +80,30 @@ void driverLCD_I2C_Config(void)
 ----------------------------------------------------------------------------------------*/
 void driverLCD_enableCMD(void)
 {
-	I2C_Cmd(DISABLE);
+	//I2C_Cmd(DISABLE);
+  
   
 	/* Reset all I2C1 registers */
-	I2C_SoftwareResetCmd(ENABLE);
-	I2C_SoftwareResetCmd(DISABLE);
+	//I2C_SoftwareResetCmd(ENABLE);
+	//I2C_SoftwareResetCmd(DISABLE);
   
 	/* Configure the I2C1 peripheral */
 	driverLCD_I2C_Config();
-	
-	I2C_GenerateSTART(ENABLE);
+
+	//I2C_GenerateSTART(ENABLE);
+	I2C->CR2 |= I2C_CR2_START;
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_MODE_SELECT));
 
-	I2C_Send7bitAddress(driverLCD_ADDRESS, I2C_DIRECTION_TX);
+	//I2C_Send7bitAddress(driverLCD_ADDRESS, I2C_DIRECTION_TX);
+	I2C->DR = driverLCD_ADDRESS;
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
-	I2C_SendData(driverLCD_MODE_CMD| driverLCD_DEV_ENABLE);
+	//I2C_SendData(driverLCD_MODE_CMD| driverLCD_DEV_ENABLE);
+	I2C->DR = (driverLCD_MODE_CMD | driverLCD_DEV_ENABLE);
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
-	I2C_GenerateSTOP(ENABLE);
+	//I2C_GenerateSTOP(ENABLE);
+	I2C->CR2 |= I2C_CR2_STOP;
 }
 
 
@@ -100,25 +114,29 @@ void driverLCD_enableCMD(void)
 ----------------------------------------------------------------------------------------*/
 void driverLCD_disableCMD(void)
 {
-	I2C_Cmd(DISABLE);
-  
+	//I2C_Cmd(DISABLE);
+    
 	/* Reset all I2C1 registers */
-	I2C_SoftwareResetCmd(ENABLE);
-	I2C_SoftwareResetCmd(DISABLE);
-  
+	//I2C_SoftwareResetCmd(ENABLE);
+	//I2C_SoftwareResetCmd(DISABLE);
+	
 	/* Configure the I2C1 peripheral */
 	driverLCD_I2C_Config();
 	
-	I2C_GenerateSTART(ENABLE);
+	//I2C_GenerateSTART(ENABLE);
+	I2C->CR2 |= I2C_CR2_START;
+	
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_MODE_SELECT));
 
-	I2C_Send7bitAddress(driverLCD_ADDRESS, I2C_DIRECTION_TX);
+	//I2C_Send7bitAddress(driverLCD_ADDRESS, I2C_DIRECTION_TX);
+	I2C->DR = driverLCD_ADDRESS;
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
-	I2C_SendData(driverLCD_MODE_CMD| driverLCD_DEV_DISABLE);
+	I2C->DR = (driverLCD_MODE_CMD | driverLCD_DEV_DISABLE);
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 
-	I2C_GenerateSTOP(ENABLE);
+	//I2C_GenerateSTOP(ENABLE);
+	I2C->CR2 |= I2C_CR2_STOP;
 }
 
 
@@ -129,34 +147,39 @@ void driverLCD_disableCMD(void)
 ----------------------------------------------------------------------------------------*/
 void driverLCD_WriteRAM(uint8_t * bufferPtr, uint8_t originRAM, uint8_t bytes)
 {
-	I2C_Cmd(DISABLE);
-  
+	//I2C_Cmd(DISABLE);	
+	
 	/* Reset all I2C1 registers */
-	I2C_SoftwareResetCmd(ENABLE);
-	I2C_SoftwareResetCmd(DISABLE);
+	//I2C_SoftwareResetCmd(ENABLE);
+	//I2C_SoftwareResetCmd(DISABLE);
+
   
 	/* Configure the I2C1 peripheral */
 	driverLCD_I2C_Config();
+
+	//I2C_GenerateSTART(ENABLE);
+	I2C->CR2 |= I2C_CR2_START;
 	
-	I2C_GenerateSTART(ENABLE);
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_MODE_SELECT));
 	
-	I2C_Send7bitAddress(driverLCD_ADDRESS, I2C_DIRECTION_TX);
+	//I2C_Send7bitAddress(driverLCD_ADDRESS, I2C_DIRECTION_TX);
+	I2C->DR = driverLCD_ADDRESS;
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 	
-	I2C_SendData(driverLCD_NEXT_CMD | driverLCD_SUBADDRESS_CMD | driverLCD_SUBADDR_0);
+	I2C->DR = (driverLCD_NEXT_CMD | driverLCD_SUBADDRESS_CMD | driverLCD_SUBADDR_0);
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 	
-	I2C_SendData(originRAM);
+	I2C->DR = originRAM;
 	while (!I2C_CheckEvent(I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 	
 	while(bytes-- > 0x00)
 	{
-		I2C_SendData(*bufferPtr++);
+		I2C->DR = *bufferPtr++;
 		while (!I2C_CheckEvent(I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 	}
 	
-	I2C_GenerateSTOP(ENABLE);
+	//I2C_GenerateSTOP(ENABLE);
+	I2C->CR2 |= I2C_CR2_STOP;
 }
 
 

@@ -8,7 +8,7 @@
 #define driver_NORDIC_MISO_PIN					GPIO_PIN_7
 #define driver_NORDIC_MOSI_PIN					GPIO_PIN_6
 #define driver_NORDIC_SPI_PORT					GPIOC
-##define driver_NORDIC_SPI						SPI
+#define driver_NORDIC_SPI						SPI
 
 #define driver_NORDIC_CSN_PIN					GPIO_PIN_2
 #define driver_NORDIC_CSN_PORT					GPIOA
@@ -79,6 +79,17 @@
 #define FEATURE			    				0x1D
 
 
+
+/*---------------------------------------------------------------------------------------------
+				Status and Control Bits for RF driver
+---------------------------------------------------------------------------------------------*/
+
+// ----------- FIFO_STATUS ----------- //
+#define RxFIFO_EMPTY				(uint8_t)0x01
+
+
+
+
 /*---------------------------------------------------------------------------------------------
 				driver functions
 ---------------------------------------------------------------------------------------------*/
@@ -89,4 +100,6 @@ uint8_t driverNordic_GetStatus(void);
 void driverNordic_ReadRegisters(uint8_t registerAddress, uint8_t * data, uint8_t count);
 void driverNordic_WriteRegisters(uint8_t registerAddress, uint8_t * data, uint8_t count);
 void driverNordic_WriteTx(uint8_t * data, uint8_t count);
-void driverNordic_TestTransmition(void);
+//void driverNordic_TestTransmition(void);
+void driverNordic_FlushRxFIFO(void);
+void driverNordic_ReadRxPayload(uint8_t * data, uint8_t count);
