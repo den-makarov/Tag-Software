@@ -56,9 +56,7 @@
     LCD Driver Functions 
 ------------------------------------------------------------------------------*/
 void driverLCD_INIT(void);
-void driverLCD_GPIO_I2C_Config(void);
 void driverLCD_I2C_Config(void);
-void driverLCD_ClockDomainConfig(void);
 void driverLCD_enableCMD(void);
 void driverLCD_disableCMD(void);
 void driverLCD_WriteRAM(uint8_t * bufferPtr, uint8_t originRAM, uint8_t bytes);
