@@ -252,11 +252,17 @@ void CLK_SlowActiveHaltWakeUpCmd(FunctionalState NewState)
   }
 }
 
+/*----------------------------------------------------------------------------------
+		Disable Clock For All Periphery
+----------------------------------------------------------------------------------*/
 void CLK_PeripheralClockDisableAll(void)
 {
 	CLK->PCKENR1 &= 0x00;
 	CLK->PCKENR2 &= 0x73;
 }
+
+
+
 /**
   * @brief   Enables or disables the specified peripheral CLK.
   * @param   CLK_Peripheral : This parameter specifies the peripheral clock to gate.
