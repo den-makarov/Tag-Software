@@ -328,14 +328,14 @@ typedef enum
   * @}
   */
 
-struct I2C_CONFIG_TypeDef {
+typedef struct {
 	uint32_t OutputClockFrequencyHz;
 	uint16_t OwnAddress;
 	I2C_DutyCycle_TypeDef I2C_DutyCycle;
 	I2C_Ack_TypeDef Ack;
 	I2C_AddMode_TypeDef AddMode;
 	uint8_t InputClockFrequencyMHz;
-};  
+}I2C_CONFIG_TypeDef;  
   
   
 /* Exported constants --------------------------------------------------------*/
@@ -516,6 +516,7 @@ void I2C_DeInit(void);
 void I2C_Init(uint32_t OutputClockFrequencyHz, uint16_t OwnAddress, 
               I2C_DutyCycle_TypeDef I2C_DutyCycle, I2C_Ack_TypeDef Ack, 
               I2C_AddMode_TypeDef AddMode, uint8_t InputClockFrequencyMHz );
+void I2C_Init_Simplified(I2C_TypeDef* I2Cx, I2C_CONFIG_TypeDef * I2C_Configuration);
 void I2C_Cmd(FunctionalState NewState);
 void I2C_GeneralCallCmd(FunctionalState NewState);
 void I2C_GenerateSTART(FunctionalState NewState);
